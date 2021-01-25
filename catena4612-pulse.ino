@@ -464,7 +464,7 @@ void setup_sensors(void)
                         gCatena.SafePrintf("Pulse totalization failed to start: defective board or incorrect platform\n");
                         }
 
-                pinMode(kPinPulse1P1, INPUT_PULLUP);
+                pinMode(kPinPulse1P1, INPUT_PULLDOWN);
                 }
         }
 
