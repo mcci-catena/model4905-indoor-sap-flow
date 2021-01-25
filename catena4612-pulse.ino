@@ -465,6 +465,7 @@ void setup_sensors(void)
                         }
 
                 pinMode(kPinPulse1P1, INPUT_PULLDOWN);
+                gPulse1P1.setDebounce(0);
                 }
         }
 
