@@ -473,9 +473,11 @@ void setup_light(void)
         if (gSi1133.begin())
                 {
                 fLight = true;
-                gSi1133.configure(0, CATENA_SI1133_MODE_SmallIR);
-                gSi1133.configure(1, CATENA_SI1133_MODE_White);
-                gSi1133.configure(2, CATENA_SI1133_MODE_UV);
+                auto const measConfig =	Catena_Si1133::ChannelConfiguration_t()
+                        .setAdcMux(Catena_Si1133::InputLed_t::LargeWhite)
+                        .set24bit(false);
+
+                gSi1133.configure(0, measConfig, 0);
                 }
         else
                 {
@@ -603,16 +605,16 @@ void fillBuffer(TxBuffer_t &b)
 
                 if (millis() - tNow < 1000)
                         {
-                        gSi1133.readMultiChannelData(data, 3);
+                        uint32_t data[1];
+
+                        gSi1133.readMultiChannelData(data, 1);
                         gSi1133.stop();
                         gCatena.SafePrintf(
-                                "Si1133:  %u IR, %u White, %u UV\n",
-                                data[0],
-                                data[1],
-                                data[2]
+                                "Si1133:  %u White\n",
+                                data[0]
                                 );
 
-                        b.putLux(data[1]);
+                        b.putLux(uint16_t(data[0]));
 
                         flag |= FlagsSensor2::FlagLux;
                         }
