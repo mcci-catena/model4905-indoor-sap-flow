@@ -21,13 +21,13 @@ Author:
 #include <Catena_Mx25v8035f.h>
 #include <Catena_TxBuffer.h>
 #include <Catena_CommandStream.h>
+#include <Catena_Si1133.h>
 #include <Catena_Totalizer.h>
 
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_BME280.h>
 #include <Arduino_LoRaWAN.h>
-#include <BH1750.h>
 #include <lmic.h>
 #include <hal/hal.h>
 #include <mcciadk_baselib.h>
@@ -167,9 +167,9 @@ StatusLed gLed (Catena::PIN_STATUS_LED);
 Adafruit_BME280 gBME280; // The default initalizer creates an I2C connection
 bool fBme;               // true if BME280 is in use
 
-//   The LUX sensor
-BH1750 gBH1750;
-bool fLux;              // true if BH1750 is in use
+//   The Light sensor
+Catena_Si1133 gSi1133;
+bool fLight;              // true if BH1750 is in use
 
 //   The contact sensors
 constexpr bool fHasPulse1 = true;
@@ -248,6 +248,7 @@ void setup(void)
         gCatena.begin();
 
         setup_platform();
+        setup_lorawan();
         setup_sensors();
         setup_flash();
         setup_commands();
@@ -439,11 +440,7 @@ void setup_sensors(void)
         uint32_t const flags = gCatena.GetPlatformFlags();
 
         /* initialize the lux sensor */
-                {
-                gBH1750.begin();
-                fLux = true;
-                gBH1750.configure(BH1750_POWER_DOWN);
-                }
+        setup_light();
 
         /* initialize the BME280 */
         if (!gBME280.begin(BME280_ADDRESS, Adafruit_BME280::OPERATING_MODE::Sleep))
@@ -466,8 +463,27 @@ void setup_sensors(void)
                         {
                         gCatena.SafePrintf("Pulse totalization failed to start: defective board or incorrect platform\n");
                         }
+
+                pinMode(kPinPulse1P1, INPUT_PULLUP);
                 }
         }
+
+void setup_light(void)
+        {
+        if (gSi1133.begin())
+                {
+                fLight = true;
+                gSi1133.configure(0, CATENA_SI1133_MODE_SmallIR);
+                gSi1133.configure(1, CATENA_SI1133_MODE_White);
+                gSi1133.configure(2, CATENA_SI1133_MODE_UV);
+                }
+        else
+                {
+                fLight = false;
+                gCatena.SafePrintf("No Si1133 found: check hardware\n");
+                }
+        }
+
 
 // The Arduino loop routine -- in our case, we just drive the other loops.
 // If we try to do too much, we can break the LMIC radio. So the work is
@@ -525,13 +541,8 @@ void fillBuffer(TxBuffer_t &b)
         uint32_t tLuxBegin;
 
         /* start a Lux measurement */
-        if (fLux)
-                {
-                gBH1750.configure(BH1750_ONE_TIME_HIGH_RES_MODE);
-                tLuxBegin = millis();
-                }
-        else
-                tLuxBegin = 0;
+        if (fLight)
+                gSi1133.start(true);
 
         /* meanwhile, fill the buffer */
         b.begin();
@@ -575,22 +586,36 @@ void fillBuffer(TxBuffer_t &b)
                 flag |= FlagsSensor2::FlagTPH;
                 }
 
-        if (fLux)
+        if (fLight)
                 {
-                /* Measure light. */
-                uint16_t light;
-                uint32_t tMeas = gBH1750.getMeasurementMillis();
+                /* Get a new sensor event */
+                uint16_t data[3];
+                auto const tNow = millis();
 
-                while (uint32_t(millis() - tLuxBegin) < tMeas)
+                while ((! gSi1133.isOneTimeReady()) && (millis() - tNow) < 10000)
                         {
-                        gCatena.poll();
-                        yield();
+                        auto const tWait = millis();
+
+                        // leave the sensor alone for 100 ms.
+                        while (millis() - tWait < 100)
+                                gCatena.poll();
                         }
 
-                light = gBH1750.readLightLevel();
-                gCatena.SafePrintf("BH1750:  %u lux\n", light);
-                b.putLux(light);
-                flag |= FlagsSensor2::FlagLux;
+                if (millis() - tNow < 1000)
+                        {
+                        gSi1133.readMultiChannelData(data, 3);
+                        gSi1133.stop();
+                        gCatena.SafePrintf(
+                                "Si1133:  %u IR, %u White, %u UV\n",
+                                data[0],
+                                data[1],
+                                data[2]
+                                );
+
+                        b.putLux(data[1]);
+
+                        flag |= FlagsSensor2::FlagLux;
+                        }
                 }
 
         if (fHasPulse1)
