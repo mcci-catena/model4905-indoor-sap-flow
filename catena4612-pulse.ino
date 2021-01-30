@@ -3,13 +3,13 @@
 Module:  catena4612-pulse.ino
 
 Function:
-        Code for the electric power sensor with Catena 4450-M101.
+        Code for the electric power sensor with Catena 4612.
 
 Copyright notice:
         See LICENSE file accompanying this project
 
 Author:
-        Terry Moore, MCCI Corporation	March 2017
+        Terry Moore, MCCI Corporation	January 2021
 
 */
 
