@@ -8,7 +8,7 @@
 
 Here's a typical installation:
 
-![Image of 4861 installed](assets/model4861-installed.jpg)
+<img src="assets/model4861-installed.jpg" width="50%" />
 
 ## Downlink commands
 
@@ -26,4 +26,4 @@ This is a bit tricky, because an ST-LINK V2 doesn't like it when the operating v
 
 1. Jumper JP1-1 to JP1-2 (tying EN to Vbat).  On early assemblies, this must be done with a clip-lead. On later units, there are posts in both positions, and you need only push on a jumper.
 
-2. Attach the STLINK V2 as normal for 4612 debugging and firmward download.
+2. Attach the STLINK V2 as normal for 4612 debugging and firmware download.
