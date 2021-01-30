@@ -1,8 +1,14 @@
-# catena4612-pulse-4871 -- Capture pulses for Model 4871 fuel-oil meter
+# catena4612-pulse-4861 -- Capture pulses for Model 4861 fuel-oil meter
 
 ## Assumptions
 
-3-wire Aichi [OF05ZAT](https://www.aichitokei.net/products/microflow-sensor-of-z/) meter attached to A1, with power from Vdd2.
+2-wire EKM Metering [PGM-075](https://www.ekmmetering.com/collections/gas-meters/products/3-4-pulse-output-gas-meter) pulse output meter, attached to A1, with GND from pin 4.
+
+![Image of meter](assets/ekm-pgm-075-meter.jpg)
+
+Here's a typical installation:
+
+![Image of 4861 installed](assets/model4861-installed.jpg)
 
 ## Downlink commands
 
@@ -13,3 +19,11 @@ Port 1 controls the sample time. The message is either two or three bytes. If tw
 Port 2 controls rejoins. The message is two bytes, and specifies the number of seconds (big endian) to wait before rejoining. While waiting to rejoin, uplinks will not be initiated.
 
 Port 3 controls reboots. The message is two bytes, and specifies the number of seconds (big endian) to wait before rejoining. While waiting to reboot, uplinks will not be initiated.
+
+## Firmware update in field
+
+This is a bit tricky, because an ST-LINK V2 doesn't like it when the operating voltage is 3V. The secret is to force 3.3V mode with a jumper.
+
+1. Jumper JP1-1 to JP1-2 (tying EN to Vbat).  On early assemblies, this must be done with a clip-lead. On later units, there are posts in both positions, and you need only push on a jumper.
+
+2. Attach the STLINK V2 as normal for 4612 debugging and firmward download.

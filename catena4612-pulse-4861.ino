@@ -464,8 +464,10 @@ void setup_sensors(void)
                         gCatena.SafePrintf("Pulse totalization failed to start: defective board or incorrect platform\n");
                         }
 
-                pinMode(kPinPulse1P1, INPUT_PULLDOWN);
-                gPulse1P1.setDebounce(0);
+                // for gas meter, we need a pull-up
+                pinMode(kPinPulse1P1, INPUT_PULLUP);
+                // it's a mechanical switch, be generous with debounce.
+                gPulse1P1.setDebounce(20);
                 }
         }
 
