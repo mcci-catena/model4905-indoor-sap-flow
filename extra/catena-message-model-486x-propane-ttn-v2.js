@@ -1,14 +1,6 @@
-// This function decodes the records (port 1, format 0x11, 0x14, 0x15, 0x16, 0x17)
-// sent by the MCCI Catena 4410/4450/4551 soil/water and power applications.
+// This function decodes the records (port 1, format 0x14)
+// sent by the MCCI Model 486x Propane/Gas meter when used with Propane.
 // For use with console.thethingsnetwork.org
-// 2017-09-19 add dewpoints.
-// 2017-12-13 fix commments, fix negative soil/water temp, add test vectors.
-// 2017-12-15 add format 0x11.
-// 2018-04-24 add format 0x16.
-// 2018-04-01 add format 0x17.
-// 2018-06-13 add air quality.
-// 2019-02-13 add simple sensor format (port 2).
-// 2019-06-28 add port 3 (no barometric pressure)
 
 // calculate dewpoint (degrees C) given temperature (C) and relative humidity (0..100)
 // from http://andrew.rsmas.miami.edu/bmcnoldy/Humidity.html
@@ -102,14 +94,22 @@ function Decoder(bytes, port) {
                 irradiance.White = lightRaw;
             }
 
+            var LiterPerGallon = 3.78541178;
+            var CfPerGallonPropane = 35.97;
+            var CfPerLiterPropane = CfPerGallonPropane / LiterPerGallon;
+            // from https://www.eia.gov/energyexplained/units-and-calculators/british-thermal-units.php
+            var BTUperGallonPropane = 91452;
+            var BTUperCfPropane = BTUperGallonPropane / CfPerGallonPropane;
+        
             if (flags & 0x20) {
                 // fuel, spare
                 var pulseIn = (bytes[i] << 8) + bytes[i + 1];
                 i += 2;
                 var pulseOut = (bytes[i] << 8) + bytes[i + 1];
                 i += 2;
-                decoded.fuelUsedCount = pulseIn;
-                decoded.fuelUsedLiters = pulseIn * 0.46e-3;
+                decoded.propaneUsedCF = pulseIn;
+                decoded.propaneUsedLiters = pulseIn / CfPerLiterPropane;
+                decoded.propaneUsedBTU = pulseIn * BTUperCfPropane;
             }
 
             if (flags & 0x40) {
@@ -122,8 +122,9 @@ function Decoder(bytes, port) {
                 var exp1 = floatIn >> 12;
                 var mant1 = (floatIn & 0xFFF) / 4096.0;
                 var pulsePerHourIn = mant1 * Math.pow(2, exp1 - 15) * 60 * 60 * 4;
-                decoded.fuelUsedPulsesPerHour = pulsePerHourIn;
-                decoded.fuelUsedLitersPerHour = pulsePerHourIn * 0.46e-3;
+                decoded.propaneUsedCfPerHour = pulsePerHourIn;
+                decoded.propaneUsedLitersPerHour = pulsePerHourIn / CfPerLiterPropane;
+                decoded.propaneUsedBtuPerHour = pulsePerHourIn * BTUperCfPropane;
             }
         } else {
             // cmd value not recognized.
