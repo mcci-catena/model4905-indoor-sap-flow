@@ -1,14 +1,19 @@
-# catena4612-pulse-4861 -- Capture pulses for Model 4861 fuel-oil meter
+# catena4610-pulse-generic -- Capture pulses for Outdoor flow meter
 
 ## Assumptions
 
-2-wire EKM Metering [PGM-075](https://www.ekmmetering.com/collections/gas-meters/products/3-4-pulse-output-gas-meter) pulse output meter, attached to A1, with GND from pin 4.
+Two-wire flow meter, attached to A1 and GND.
 
-![Image of meter](assets/ekm-pgm-075-meter.jpg)
+A1 is JP5 pin 2.
+GND is JP4 pin 4
 
-Here's a typical installation:
+![Pinout diagram of 4610 for reference](https://github.com/mcci-catena/HW-Designs/blob/master/Boards/Catena-4611_4612/Catena-4611_4612_4617_4618_4618-M201_Pinout.png)
 
-<img src="assets/model4861-installed.jpg" width="50%" />
+## Cable entry
+
+Drill out a suitable hole in the panel; use a slow drill, the plastic is fragile.
+
+The dimples in the rear panel (around the USB connector) are intended for this purpose.
 
 ## Downlink commands
 
@@ -22,8 +27,7 @@ Port 3 controls reboots. The message is two bytes, and specifies the number of s
 
 ## Firmware update in field
 
-This is a bit tricky, because an ST-LINK V2 doesn't like it when the operating voltage is 3V. The secret is to force 3.3V mode with a jumper.
-
-1. Jumper JP1-1 to JP1-2 (tying EN to Vbat).  On early assemblies, this must be done with a clip-lead. On later units, there are posts in both positions, and you need only push on a jumper.
-
-2. Attach the STLINK V2 as normal for 4612 debugging and firmware download.
+- Open the enclosure.
+- Attach a USB cable.
+- Reset the device while holding the boot button
+- Download code using DFU

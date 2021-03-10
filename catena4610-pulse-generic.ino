@@ -1,9 +1,9 @@
 /*
 
-Module:  catena4612-pulse.ino
+Module:  catena4610-pulse-generic.ino
 
 Function:
-        Code for the electric power sensor with Catena 4612.
+        Code for the outdoor pulse sensor with Catena 4610.
 
 Copyright notice:
         See LICENSE file accompanying this project
@@ -100,9 +100,12 @@ dNdT_getFrac(
 |
 \****************************************************************************/
 
-constexpr uint8_t kPinBoost = D33;
+#if defined(ARDUINO_MCCI_CATENA_4610)
 constexpr uint8_t kPinExtVddEna = D11;
 constexpr uint8_t kPinPulse1P1 = A1;
+#else
+# error "Unsupported platform"
+#endif
 
 /****************************************************************************\
 |
@@ -300,9 +303,6 @@ void setup_platform()
         {
         // turn on the boost converter
 
-        pinMode(kPinBoost, OUTPUT);
-        digitalWrite(kPinBoost, 1);
-
 #ifdef USBCON
         // if running unattended, don't wait for USB connect.
         if (!(gCatena.GetOperatingFlags() &
@@ -384,18 +384,18 @@ void setup_platform()
 
         if (modnumber != 0)
                 {
-                gCatena.SafePrintf("Catena 4612-M%u\n", modnumber);
+                gCatena.SafePrintf("Catena 4610-M%u\n", modnumber);
                 if (modnumber == 101)
                         {
                         }
                 else
                         {
-                        gCatena.SafePrintf("Catena 4612: unknown mod number %d\n", modnumber);
+                        gCatena.SafePrintf("Catena 4610: unknown mod number %d\n", modnumber);
                         }
                 }
         else
                 {
-                gCatena.SafePrintf("Standard Catena 4612\n");
+                gCatena.SafePrintf("Standard Catena 4610\n");
                 }
         }
 
