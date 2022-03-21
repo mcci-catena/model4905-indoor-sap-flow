@@ -1,4 +1,4 @@
-# catena4610-pulse-generic -- Capture pulses for Outdoor flow meter
+# model4905-indoor-sap-flow -- Capture pulses for indoor sap flow meter
 
 ## Assumptions
 
