@@ -1,9 +1,9 @@
 /*
 
-Module:  catena4610-pulse-generic.ino
+Module:  model4905-indoor-sap-flow.ino
 
 Function:
-        Code for the outdoor pulse sensor with Catena 4610.
+        Code for the indoor sap flow sensor with Catena 4610.
 
 Copyright notice:
         See LICENSE file accompanying this project
@@ -133,7 +133,7 @@ static constexpr const char *filebasename(const char *s)
 |
 \****************************************************************************/
 
-static const char sVersion[] = "0.1.1";
+static const char sVersion[] = "1.0.0";
 
 /****************************************************************************\
 |
