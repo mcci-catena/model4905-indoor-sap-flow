@@ -36,7 +36,7 @@ Port 3 controls reboots. The message is two bytes, and specifies the number of s
 
 ### Revision History
 
-v1.0.0 is the first official release from this collection.
+v1.0.0 is the first official release of this sketch from this repo.
 
 ### Trademarks and copyright
 
