@@ -126,6 +126,35 @@ function Decoder(bytes, port) {
                 decoded.propaneUsedLitersPerHour = pulsePerHourIn / CfPerLiterPropane;
                 decoded.propaneUsedBtuPerHour = pulsePerHourIn * BTUperCfPropane;
             }
+
+            // fetch the bitmap.
+            var flags2 = bytes[Parse.i++];
+
+            if (flags & 0x1) {
+                // fuel, spare
+                var pulseIn = (bytes[i] << 8) + bytes[i + 1];
+                i += 2;
+                var pulseOut = (bytes[i] << 8) + bytes[i + 1];
+                i += 2;
+                decoded.propaneUsedCFTwo = pulseIn;
+                decoded.propaneUsedLitersTwo = pulseIn / CfPerLiterPropane;
+                decoded.propaneUsedBTUTwo = pulseIn * BTUperCfPropane;
+            }
+
+            if (flags & 0x2) {
+                // normalize floating pulses per hour
+                var floatIn = (bytes[i] << 8) + bytes[i + 1];
+                i += 2;
+                var floatOut = (bytes[i] << 8) + bytes[i + 1];
+                i += 2;
+
+                var exp1 = floatIn >> 12;
+                var mant1 = (floatIn & 0xFFF) / 4096.0;
+                var pulsePerHourIn = mant1 * Math.pow(2, exp1 - 15) * 60 * 60 * 4;
+                decoded.propaneUsedCfPerHourTwo = pulsePerHourIn;
+                decoded.propaneUsedLitersPerHourTwo = pulsePerHourIn / CfPerLiterPropane;
+                decoded.propaneUsedBtuPerHourTwo = pulsePerHourIn * BTUperCfPropane;
+            }
         } else {
             // cmd value not recognized.
         }
