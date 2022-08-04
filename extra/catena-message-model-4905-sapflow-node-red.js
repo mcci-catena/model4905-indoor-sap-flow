@@ -95,65 +95,33 @@ function Decoder(bytes, port) {
             }
 
             var LiterPerGallon = 3.78541178;
-            var CfPerGallonPropane = 35.97;
-            var CfPerLiterPropane = CfPerGallonPropane / LiterPerGallon;
+            var CfPerGallonSap = 35.97;
+            var CfPerLiterSap = CfPerGallonSap / LiterPerGallon;
             // from https://www.eia.gov/energyexplained/units-and-calculators/british-thermal-units.php
-            var BTUperGallonPropane = 91452;
-            var BTUperCfPropane = BTUperGallonPropane / CfPerGallonPropane;
-
+            var BTUperGallonSap = 91452;
+            var BTUperCfSap = BTUperGallonSap / CfPerGallonSap;
+        
             if (flags & 0x20) {
                 // fuel, spare
                 var pulseIn = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                var pulseOut = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                decoded.propaneUsedCF = pulseIn;
-                decoded.propaneUsedLiters = pulseIn / CfPerLiterPropane;
-                decoded.propaneUsedBTU = pulseIn * BTUperCfPropane;
+                i += 4;
+
+                decoded.sapUsedCF = pulseIn;
+                decoded.sapUsedLiters = pulseIn / CfPerLiterSap;
+                decoded.sapUsedBTU = pulseIn * BTUperCfSap;
             }
 
             if (flags & 0x40) {
                 // normalize floating pulses per hour
                 var floatIn = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                var floatOut = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
+                i += 4;
 
                 var exp1 = floatIn >> 12;
                 var mant1 = (floatIn & 0xFFF) / 4096.0;
                 var pulsePerHourIn = mant1 * Math.pow(2, exp1 - 15) * 60 * 60 * 4;
-                decoded.propaneUsedCfPerHour = pulsePerHourIn;
-                decoded.propaneUsedLitersPerHour = pulsePerHourIn / CfPerLiterPropane;
-                decoded.propaneUsedBtuPerHour = pulsePerHourIn * BTUperCfPropane;
-            }
-
-            // fetch the bitmap.
-            var flags2 = bytes[Parse.i++];
-
-            if (flags & 0x1) {
-                // fuel, spare
-                var pulseIn = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                var pulseOut = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                decoded.propaneUsedCFTwo = pulseIn;
-                decoded.propaneUsedLitersTwo = pulseIn / CfPerLiterPropane;
-                decoded.propaneUsedBTUTwo = pulseIn * BTUperCfPropane;
-            }
-
-            if (flags & 0x2) {
-                // normalize floating pulses per hour
-                var floatIn = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                var floatOut = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-
-                var exp1 = floatIn >> 12;
-                var mant1 = (floatIn & 0xFFF) / 4096.0;
-                var pulsePerHourIn = mant1 * Math.pow(2, exp1 - 15) * 60 * 60 * 4;
-                decoded.propaneUsedCfPerHourTwo = pulsePerHourIn;
-                decoded.propaneUsedLitersPerHourTwo = pulsePerHourIn / CfPerLiterPropane;
-                decoded.propaneUsedBtuPerHourTwo = pulsePerHourIn * BTUperCfPropane;
+                decoded.sapUsedCfPerHour = pulsePerHourIn;
+                decoded.sapUsedLitersPerHour = pulsePerHourIn / CfPerLiterSap;
+                decoded.sapUsedBtuPerHour = pulsePerHourIn * BTUperCfSap;
             }
         } else {
             // cmd value not recognized.
