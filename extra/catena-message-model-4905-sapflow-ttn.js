@@ -1,5 +1,5 @@
 // This function decodes the records (port 1, format 0x14)
-// sent by the MCCI Model 4905 Sap Flow meter when used with Sap.
+// sent by the MCCI Model 486x Propane/Gas meter when used with Propane.
 // For use with console.thethingsnetwork.org
 
 // calculate dewpoint (degrees C) given temperature (C) and relative humidity (0..100)
@@ -93,34 +93,23 @@ function Decoder(bytes, port) {
                 decoded.irradiance = irradiance;
                 irradiance.White = lightRaw;
             }
-
-            var LiterPerGallon = 3.78541178;
-            var CfPerGallonSap = 35.97;
-            var CfPerLiterSap = CfPerGallonSap / LiterPerGallon;
-            // from https://www.eia.gov/energyexplained/units-and-calculators/british-thermal-units.php
-            var BTUperGallonSap = 91452;
-            var BTUperCfSap = BTUperGallonSap / CfPerGallonSap;
         
             if (flags & 0x20) {
-                // fuel, spare
-                var pulseIn = (bytes[i] << 8) + bytes[i + 1];
+                // we have sap flow liters
+                var pulse = (bytes[i] << 8) + bytes[i + 1];
                 i += 4;
-                decoded.sapUsedCF = pulseIn;
-                decoded.sapUsedLiters = pulseIn / CfPerLiterSap;
-                decoded.sapUsedBTU = pulseIn * BTUperCfSap;
+                decoded.sapGallonsPerTap = pulse;
             }
 
             if (flags & 0x40) {
                 // normalize floating pulses per hour
-                var floatIn = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
+                var flowRateRaw = (bytes[i] << 8) + bytes[i + 1];
+                i += 4;
 
-                var exp1 = floatIn >> 12;
-                var mant1 = (floatIn & 0xFFF) / 4096.0;
-                var pulsePerHourIn = mant1 * Math.pow(2, exp1 - 15) * 60 * 60 * 4;
-                decoded.sapUsedCfPerHour = pulsePerHourIn;
-                decoded.sapUsedLitersPerHour = pulsePerHourIn / CfPerLiterSap;
-                decoded.sapUsedBtuPerHour = pulsePerHourIn * BTUperCfSap;
+                var exp1 = flowRateRaw >> 12;
+                var mant1 = (flowRateRaw & 0xFFF) / 4096.0;
+                var pulsePerHour = mant1 * Math.pow(2, exp1 - 15) * 60 * 60 * 4;
+                decoded.sapGallonsPerTapPerHour = pulsePerHour;
             }
         } else {
             // cmd value not recognized.
@@ -129,4 +118,12 @@ function Decoder(bytes, port) {
 
     // at this point, decoded has the real values.
     return decoded;
+}
+
+// TTN V3 decoder
+function decodeUplink(tInput) {
+    var decoded = Decoder(tInput.bytes, tInput.fPort);
+    var result = {};
+    result.data = decoded;
+    return result;
 }
