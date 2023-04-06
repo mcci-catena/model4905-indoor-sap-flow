@@ -1,6 +1,6 @@
 // This function decodes the records (port 1, format 0x14)
 // sent by the MCCI Model 486x Propane/Gas meter when used with Propane.
-// For use with Node Red
+// For use with console.thethingsnetwork.org
 
 // calculate dewpoint (degrees C) given temperature (C) and relative humidity (0..100)
 // from http://andrew.rsmas.miami.edu/bmcnoldy/Humidity.html
@@ -31,7 +31,7 @@ function Decoder(bytes, port) {
     if (port === 1) {
         cmd = bytes[0];
         if (cmd == 0x14) {
-            // decode pulse data
+            // decode Catena 4450 M101 pulse data
 
             // test vectors:
             //  14 01 18 00 ==> Vbat = 1.5
@@ -93,38 +93,23 @@ function Decoder(bytes, port) {
                 decoded.irradiance = irradiance;
                 irradiance.White = lightRaw;
             }
-
-            var LiterPerGallon = 3.78541178;
-            var CfPerGallonPropane = 35.97;
-            var CfPerLiterPropane = CfPerGallonPropane / LiterPerGallon;
-            // from https://www.eia.gov/energyexplained/units-and-calculators/british-thermal-units.php
-            var BTUperGallonPropane = 91452;
-            var BTUperCfPropane = BTUperGallonPropane / CfPerGallonPropane;
-
+        
             if (flags & 0x20) {
-                // fuel, spare
-                var pulseIn = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                var pulseOut = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                decoded.propaneUsedCF = pulseIn;
-                decoded.propaneUsedLiters = pulseIn / CfPerLiterPropane;
-                decoded.propaneUsedBTU = pulseIn * BTUperCfPropane;
+                // we have sap flow liters
+                var pulse = (bytes[i] << 8) + bytes[i + 1];
+                i += 4;
+                decoded.sapGallonsPerTap = pulse;
             }
 
             if (flags & 0x40) {
                 // normalize floating pulses per hour
-                var floatIn = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
-                var floatOut = (bytes[i] << 8) + bytes[i + 1];
-                i += 2;
+                var flowRateRaw = (bytes[i] << 8) + bytes[i + 1];
+                i += 4;
 
-                var exp1 = floatIn >> 12;
-                var mant1 = (floatIn & 0xFFF) / 4096.0;
-                var pulsePerHourIn = mant1 * Math.pow(2, exp1 - 15) * 60 * 60 * 4;
-                decoded.propaneUsedCfPerHour = pulsePerHourIn;
-                decoded.propaneUsedLitersPerHour = pulsePerHourIn / CfPerLiterPropane;
-                decoded.propaneUsedBtuPerHour = pulsePerHourIn * BTUperCfPropane;
+                var exp1 = flowRateRaw >> 12;
+                var mant1 = (flowRateRaw & 0xFFF) / 4096.0;
+                var pulsePerHour = mant1 * Math.pow(2, exp1 - 15) * 60 * 60 * 4;
+                decoded.sapGallonsPerTapPerHour = pulsePerHour;
             }
         } else {
             // cmd value not recognized.
@@ -135,51 +120,10 @@ function Decoder(bytes, port) {
     return decoded;
 }
 
-
-/*
-
-Node-RED function body.
-
-Input:
-    msg     the object to be decoded.
-
-        msg.payload_raw is taken
-        as the raw payload if present; otheriwse msg.payload
-        is taken to be a raw payload.
-
-        msg.port is taken to be the LoRaWAN port nubmer.
-
-
-Returns:
-    This function returns a message body. It's a mutation of the
-    input msg; msg.payload is changed to the decoded data, and
-    msg.local is set to additional application-specific information.
-
-*/
-
-var b;
-
-if ("payload_raw" in msg) {
-    // the console already decoded this
-    b = msg.payload_raw;  // pick up data for convenience
-    // msg.payload_fields still has the decoded data
+// TTN V3 decoder
+function decodeUplink(tInput) {
+    var decoded = Decoder(tInput.bytes, tInput.fPort);
+    var result = {};
+    result.data = decoded;
+    return result;
 }
-else {
-    // no console debug
-    b = msg.payload;  // pick up data for conveneince
-}
-
-var result = Decoder(b, msg.port);
-
-// now update msg with the new payload and new .local field
-// the old msg.payload is overwritten.
-msg.payload = result;
-msg.local =
-{
-    nodeType: "MCCI Model 4861",
-    platformType: "MCCI Catena 4612",
-    radioType: "Murata",
-    applicationName: "Propane"
-};
-
-return msg;
